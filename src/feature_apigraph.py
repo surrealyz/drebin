@@ -22,10 +22,10 @@ def ProcessingDataForApiGraph(ApkDirectoryPath, data_fname, ag_fname, method_clu
                     api_name = name
                 cluster_id = method_cluster_mapping.get(api_name, None)
                 if cluster_id != None:
-                    new_name = cluster_api_mapping[method_cluster_mapping[api_name]]
+                    new_name = cluster_api_mapping[cluster_id]
                     api_feat.add('%s_%s' % (feat_type, new_name))
                 else:
-                    fout.write()
+                    fout.write(line)
             else:
                 fout.write(line)
     for new_name in api_feat:
@@ -42,8 +42,9 @@ def main():
     cluster_api_mapping = pickle.load(open('/home/yz/code/APIGraph/src/res/cluster_api_mapping_2000.pkl', 'rb'))
 
     # merge features for 2012 2013 2014 files
-    #for year in range(2012, 2015):
+    #for year in range(2012, 2013):
     for year in range(2012, 2014):
+        #month_list = [1]
         month_list = list(range(1, 13))
         for midx, m in enumerate(month_list):
             if midx < 9:
