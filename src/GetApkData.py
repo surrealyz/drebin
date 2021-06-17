@@ -235,7 +235,7 @@ def GetApkData(ProcessNumber, *ApkDirectoryPaths):
     ApkFileList = []
     for ApkDirectoryPath in ApkDirectoryPaths:
         ApkFileList.extend(CM.ListApkFiles(ApkDirectoryPath))
-        ApkFileList.extend(CM.ListFiles(ApkDirectoryPath, ""))
+        #ApkFileList.extend(CM.ListFiles(ApkDirectoryPath, ""))
     # Because some apk files may not have extension....
     CWD = os.getcwd()
     os.chdir(os.path.join(CWD, "Modules"))
