@@ -28,9 +28,10 @@ def GetInvokedAndroidApis(DalvikCodeList):
     DalvikCodeList = set(DalvikCodeList)
     ApiList = []
     SuspiciousApiSet = set()
-    AndroidSuspiciousApiNameList = ["getExternalStorageDirectory", "getSimCountryIso", "execHttpRequest", 
-                "sendTextMessage", "getSubscriberId", "getDeviceId", "getPackageInfo", "getSystemService", "getWifiState", 
-                "setWifiEnabled", "setWifiDisabled", "Cipher"]
+    AndroidSuspiciousApiList = [line.rstrip() for line in open('/home/yz/code/drebin/src/Modules/drebin_suspicious_and_restricted_APIs.txt', 'r')]
+    #AndroidSuspiciousApiNameList = ["getExternalStorageDirectory", "getSimCountryIso", "execHttpRequest", 
+    #            "sendTextMessage", "getSubscriberId", "getDeviceId", "getPackageInfo", "getSystemService", "getWifiState", 
+    #            "setWifiEnabled", "setWifiDisabled", "Cipher"]
     OtherSuspiciousApiNameList = ["Ljava/net/HttpURLconnection;->setRequestMethod(Ljava/lang/String;)", "Ljava/net/HttpURLconnection", 
                                   "Lorg/apache/http/client/methods/HttpPost", "Landroid/telephony/SmsMessage;->getMessageBody", 
                                   "Ljava/io/IOException;->printStackTrace", "Ljava/lang/Runtime;->exec"]
@@ -51,9 +52,11 @@ def GetInvokedAndroidApis(DalvikCodeList):
                         ApiDetails['ApiClass'] = ApiClass
                         ApiDetails['ApiName'] = ApiName
                         ApiList.append(ApiDetails)
-                        if(ApiName in AndroidSuspiciousApiNameList):
-                            #ApiClass = Api['ApiClass'].replace("/", ".").replace("Landroid", "android").strip()
-                            SuspiciousApiSet.add(ApiClass+"."+ApiName)
+                        ApiClass = ApiClass.replace("/", ".").replace("Landroid", "android").replace("Ljava", "java").replace("Lorg", "org").strip()
+                        SuspiciousApiSet.add(ApiClass+"."+ApiName)
+                        FullApiName = ApiClass+"."+ApiName
+                        if FullApiName in AndroidSuspiciousApiList:
+                            SuspiciousApiSet.add(FullApiName)
                 for Element in OtherSuspiciousApiNameList:
                     if(Element in Part):
                         SuspiciousApiSet.add(Element)

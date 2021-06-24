@@ -11,8 +11,7 @@ Logger = logging.getLogger('main.stdout')
 def main():
     NCpuCores = psutil.cpu_count()
 
-    # extract features for 2012 2013 2014 files
-    for year in range(2012, 2015):
+    for year in range(2012, 2019):
         month_list = list(range(1, 13))
         for midx, m in enumerate(month_list):
             if midx < 9:
@@ -22,7 +21,7 @@ def main():
             MalDir = '/space1/android/malware/%s/%s' % (year, month)
             GoodDir = '/space1/android/benign/%s/%s' % (year, month)
             print(MalDir, GoodDir)
-            GetApkData(NCpuCores, MalDir, GoodDir)
+            GetApkData(NCpuCores*4, MalDir, GoodDir)
 
     return
     
