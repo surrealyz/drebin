@@ -156,6 +156,29 @@ Get the Apk file names for an ApkDirectory in a sorted order. Rerurn an empty li
                 ListOfApkFiles.append(AbsolutePath)
     return sorted(ListOfApkFiles)
 
+def ListXmlFiles(ApkDirectory):
+    '''
+Get the Apk file names for an ApkDirectory in a sorted order. Rerurn an empty list if ApkDirectory=="".
+
+:param String ApkDirectory: absolute path of a apk file directory
+:return ListOfApkFiles: The list of absolute paths of Apks under ApkDirectory
+:rtype List[String]
+    '''
+    ListOfApkFiles=[]
+    if(ApkDirectory==""):
+        raise ValueError('Directory is empty!')
+    filenames = os.listdir(ApkDirectory)
+    for filename in filenames:
+        #list filenames 
+        #get the absolute path for the files
+        AbsolutePath=os.path.abspath(os.path.join(ApkDirectory, filename))
+        #get the absolute path for the files
+        if os.path.splitext(filename)[1]==".xml":
+            if os.path.isfile(AbsolutePath):
+                ListOfApkFiles.append(AbsolutePath)
+    return sorted(ListOfApkFiles)
+
+
 def ListAgFiles(ApkDirectory):
     '''
 Get the .ag file names for an ApkDirectory in a sorted order. Rerurn an empty list if ApkDirectory=="".

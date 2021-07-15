@@ -41,37 +41,34 @@ def main():
     method_cluster_mapping = pickle.load(open('/home/yz/code/APIGraph/src/res/method_cluster_mapping_2000.pkl', 'rb'))
     cluster_api_mapping = pickle.load(open('/home/yz/code/APIGraph/src/res/cluster_api_mapping_2000.pkl', 'rb'))
 
-    for year in range(2014, 2015):
+    # merge features for 2012 2013 2014 files
+    for year in range(2012, 2019):
+        #month_list = [1]
         month_list = list(range(1, 13))
         for midx, m in enumerate(month_list):
-            if year == 2014 and m != 9:
-                continue
             if midx < 9:
                 month = '0%s' % m
             else:
                 month = str(m)
-            MalDir = '/space1/android/malware/%s/%s' % (year, month)
-            GoodDir = '/space1/android/benign/%s/%s' % (year, month)
+            MalDir = '/space1/mldroid_drebin/malware/%s/%s' % (year, month)
+            GoodDir = '/space1/mldroid_drebin/benign/%s/%s' % (year, month)
             print(MalDir, GoodDir)
-            ApkFileList = []
+            DataFileList = []
             for ApkDirectoryPath in [MalDir, GoodDir]:
-                ApkFileList.extend(CM.ListApkFiles(ApkDirectoryPath))
+                DataFileList.extend(CM.ListDataFiles(ApkDirectoryPath))
 
             pool = mp.Pool(NCpuCores)
             ProcessingResults = []
             ScheduledTasks = []
             ProgressBar = CM.ProgressBar()
-            for ApkFile in ApkFileList:
-                data_fname = os.path.splitext(ApkFile)[0] + ".data"
-                ag_fname = os.path.splitext(ApkFile)[0] + ".ag"
-                #if CM.FileExist(ag_fname):
-                #    pass
-                #else:
-                if not CM.FileExist(data_fname):
+            for DataFile in DataFileList:
+                data_fname = DataFile
+                ag_fname = os.path.splitext(DataFile)[0] + ".ag"
+                if CM.FileExist(ag_fname):
                     pass
                 else:
-                    ApkDirectoryPath = os.path.split(ApkFile)[0]
-                    ScheduledTasks.append(ApkFile)
+                    ApkDirectoryPath = os.path.split(DataFile)[0]
+                    ScheduledTasks.append(DataFile)
                     ProcessingResults = pool.apply_async(ProcessingDataForApiGraph, args=(ApkDirectoryPath, data_fname, ag_fname, method_cluster_mapping, cluster_api_mapping),
                                                          callback=ProgressBar.CallbackForProgressBar)
             pool.close()

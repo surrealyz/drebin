@@ -73,14 +73,13 @@ def RandomClassification(MalwareCorpus, GoodwareCorpus, TestSize, FeatureOption,
         print "The training time for random split classification is %s sec." % (round(time.time() - T0,2))
         print "Enter a filename to save the model:"
         filename = raw_input()
-        dump(Clf, filename + ".pkl")
+        dump(BestModel, filename)
     else:
-        SVMModels = load(Model)
-        BestModel= SVMModels.best_estimator
+        BestModel = load(Model)
 
     # step 4: Evaluate the best model on test set
     T0 = time.time()
-    y_pred = SVMModels.predict(x_test)
+    y_pred = BestModel.predict(x_test)
     print "The testing time for random split classification is %s sec." % (round(time.time() - T0,2))
     Accuracy = accuracy_score(y_test, y_pred)
     print "Test Set Accuracy = {}".format(Accuracy)

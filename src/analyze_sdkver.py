@@ -50,10 +50,12 @@ def ProcessingData(XmlFile):
 def main():
     NCpuCores = psutil.cpu_count()
     
-    fout = open('analyze_sdkver.tsv', 'w')
-    for year in range(2012, 2019):
+    fout = open('analyze_sdkver_pt2.tsv', 'w')
+    for year in range(2015, 2019):
         month_list = list(range(1, 13))
         for midx, m in enumerate(month_list):
+            if year == 2015 and m <= 5:
+                continue
             if midx < 9:
                 month = '0%s' % m
             else:
@@ -71,10 +73,11 @@ def main():
             ScheduledTasks = []
             ProgressBar = CM.ProgressBar()
             for XmlFile in XmlFileList:
-                data_fname = os.path.splitext(XmlFile)[0] + ".data"
-                if not CM.FileExist(data_fname):
-                    pass
-                else:
+                #data_fname = os.path.splitext(XmlFile)[0] + ".data"
+                #if not CM.FileExist(data_fname):
+                #    pass
+                #else:
+                if True:
                     ApkDirectoryPath = os.path.split(XmlFile)[0]
                     ScheduledTasks.append(XmlFile)
                     result_obj = pool.apply_async(ProcessingData, args=(XmlFile,),
