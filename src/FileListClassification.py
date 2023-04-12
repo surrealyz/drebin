@@ -4,6 +4,7 @@ import scipy.sparse
 import CommonModules as CM
 import sys
 from sklearn.feature_extraction.text import TfidfVectorizer as TF
+from sklearn.calibration import CalibratedClassifierCV
 from sklearn.svm import LinearSVC
 from sklearn.model_selection import GridSearchCV
 from sklearn import metrics
@@ -12,7 +13,7 @@ from sklearn.metrics import confusion_matrix
 import logging
 from joblib import dump, load
 import json, os
-#from pprint import pprint
+from scipy.sparse import vstack
 
 logging.basicConfig(level=logging.INFO)
 Logger = logging.getLogger('HoldoutClf.stdout')
@@ -38,9 +39,13 @@ def sort_index(pred_scores):
     sorted_conf = sorted(confidence, key=lambda x:x[1])
     return sorted_conf
 
-def get_wrong_samples(y_test, y_pred, test_samples):
-    indices = np.where(y_test != y_pred)
-    return test_samples[indices]
+def get_wrong_samples(y_test, y_pred, y_proba, test_samples):
+    # FP samples: y_test = -1, y_pred = 1
+    # FN samples: y_test = 1, y_pred = -1
+    # tuple, e.g, (array([0, 1]),)
+    fp_indices = np.where((y_test == -1) & (y_pred == 1))
+    fn_indices = np.where((y_test == 1) & (y_pred == -1))
+    return test_samples[fp_indices], test_samples[fn_indices], y_proba[fp_indices][:, 1], y_proba[fn_indices][:, 0]
 
 def FileListClassification(SaveModelName, TrainMalSamples, TrainGoodSamples, TestMalSamples, TestGoodSamples, FeatureOption, Model, NumTopFeats):
     # step 1: creating feature vector
@@ -133,11 +138,16 @@ def FileListClassificationSamples(SaveModelName, TrainMalSamples, TrainGoodSampl
 
     T0 = time.time()
     if not Model:
+        """
         Clf = GridSearchCV(LinearSVC(), Parameters, cv= 5, scoring= 'f1', n_jobs=-1 )
         SVMModels= Clf.fit(x_train, y_train)
         Logger.info("Processing time to train and find best model with GridSearchCV is %s sec." %(round(time.time() -T0, 2)))
         BestModel= SVMModels.best_estimator_
         Logger.info("Best Model Selected : {}".format(BestModel))
+        """
+        clf = CalibratedClassifierCV(LinearSVC())
+        clf.fit(x_train, y_train)
+        BestModel = clf
         TrainingTime = round(time.time() - T0,2)
         print "The training time for random split classification is %s sec." % (TrainingTime)
         print "Save the model to %s" % SaveModelName
@@ -149,6 +159,7 @@ def FileListClassificationSamples(SaveModelName, TrainMalSamples, TrainGoodSampl
     # step 4: Evaluate the best model on test set
     # y_pred is predicted class label
     y_pred = BestModel.predict(x_test)
+    y_proba = BestModel.predict_proba(x_test)
     TestingTime = round(time.time() - TrainingTime - T0,2)
     tpr, tnr, fpr, fnr, acc, precision, f1 = get_model_stats(y_test, y_pred)
     print('Model Performance\tTPR\tTNR\tFPR\tFNR\tACC\tPREC\tF1')
@@ -159,8 +170,8 @@ def FileListClassificationSamples(SaveModelName, TrainMalSamples, TrainGoodSampl
     #                                    y_pred, labels=[1, -1],
     #                                    target_names=['Malware', 'Goodware']))
 
-    samples = get_wrong_samples(y_test, y_pred, test_samples)
-    return samples
+    fp_samples, fn_samples, fp_scores, fn_scores = get_wrong_samples(y_test, y_pred, y_proba, test_samples)
+    return fp_samples, fn_samples, fp_scores, fn_scores
 
 def IncrementalClassification(SaveModelName, TrainMalSamples, TrainGoodSamples, TestMalSamples, TestGoodSamples, FeatureOption, Model, NumTopFeats, year, month):
     # step 1: creating feature vector
@@ -452,6 +463,69 @@ def TargetScoreClassification(SaveModelName, TrainMalSamples, TrainGoodSamples, 
         dump(BestModel, Model)
 
     return y_train, y_test, y_pred, TrainingTime, TestingTime
+
+def SelfSupervised(SaveModelName, TrainSamples, y_train, TestSamples, y_test, FeatureOption, Model, NumTopFeats, year, month):
+    # step 1: creating feature vector
+    Logger.debug("Loading Malware and Goodware Sample Data for training and testing")
+    Logger.info("Loaded Samples")
+
+    FeatureVectorizer = TF(input="filename", tokenizer=lambda x: x.split('\n'), token_pattern=None,
+                           binary=FeatureOption)
+    x_train = FeatureVectorizer.fit_transform(TrainSamples)
+    x_test = FeatureVectorizer.transform(TestSamples)
+
+    # step 2: train the model
+    Logger.info("Perform Classification with SVM Model")
+    Parameters= {'C': [0.001, 0.01, 0.1, 1, 10, 100, 1000]}
+
+    T0 = time.time()
+    if not Model:
+        Clf = GridSearchCV(LinearSVC(), Parameters, cv= 5, scoring= 'f1', n_jobs=-1 )
+        SVMModels= Clf.fit(x_train, y_train)
+        Logger.info("Processing time to train and find best model with GridSearchCV is %s sec." %(round(time.time() -T0, 2)))
+        BestModel= SVMModels.best_estimator_
+        Logger.info("Best Model Selected : {}".format(BestModel))
+        TrainingTime = round(time.time() - T0,2)
+        print "The training time for random split classification is %s sec." % (TrainingTime)
+        print "Save the model to %s" % SaveModelName
+        dump(BestModel, SaveModelName)
+    else:
+        BestModel = load(Model)
+        TrainingTime = 0
+
+    # step 3: Evaluate the best model on test set
+    # y_pred is predicted class label
+    y_pred = BestModel.predict(x_test)
+    TestingTime = round(time.time() - TrainingTime - T0,2)
+    tpr, tnr, fpr, fnr, acc, precision, f1 = get_model_stats(y_test, y_pred)
+    print('Model Performance\tTPR\tTNR\tFPR\tFNR\tACC\tPREC\tF1')
+    print('Model Performance\t%.3f\t%.3f\t%.3f\t%.3f\t%.3f\t%.3f\t%.3f\n' % \
+	    (tpr, tnr, fpr, fnr, acc, precision, f1))
+    sys.stdout.flush()
+
+    # step 4: add all these samples to the training set
+    print('Use prediction to label %d more samples...' % x_test.shape[0])
+    
+    TrainSamples.extend(TestSamples)
+    x_train = FeatureVectorizer.fit_transform(TrainSamples)
+    y_train = np.concatenate((y_train, y_pred), axis=0)
+    
+    # step 5: retrain the model
+    Logger.info("Perform Classification with SVM Model")
+    Parameters= {'C': [0.001, 0.01, 0.1, 1, 10, 100, 1000]}
+
+    T0 = time.time()
+    Clf = GridSearchCV(LinearSVC(), Parameters, cv= 5, scoring= 'f1', n_jobs=-1 )
+    SVMModels= Clf.fit(x_train, y_train)
+    Logger.info("Processing time to train and find best model with GridSearchCV is %s sec." %(round(time.time() -T0, 2)))
+    BestModel= SVMModels.best_estimator_
+    Logger.info("Best Model Selected : {}".format(BestModel))
+    TrainingTime = round(time.time() - T0,2)
+    print "The training time is %s sec." % (TrainingTime)
+    print "Save the retrained model to %s" % Model
+    dump(BestModel, Model)
+
+    return TrainSamples, y_train
 
 def RangeClassification(SaveModelName, TrainMalSamples, TrainGoodSamples, TestMalSamples, TestGoodSamples, FeatureOption, Model, NumTopFeats, year, month, low_score, target_score):
     # step 1: creating feature vector

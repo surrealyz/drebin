@@ -6,9 +6,12 @@ import os
 from FileListClassification import FileListClassification
 
 def parse_args():
-    parser = argparse.ArgumentParser(description='Train on 2012, test on each month after.')
-    parser.add_argument('--feature_type', type=str, choices=['reduced_drebin', 'drebin', \
-            'reduced_drebin_asn', 'drebin_asn', \
+    parser = argparse.ArgumentParser(description='Train on 201501, test on each month after.')
+    parser.add_argument('--start_year', type=int, help='The start year. e.g., 2012', required=True)
+    parser.add_argument('--train_one_month', action='store_true')
+    parser.add_argument('--feature_type', type=str, choices=['mldroid_drebin', 'drebin', \
+            'mldroid_drebin_asn', 'drebin_asn', \
+            'mldroid_drebin_reduced', \
             'ccs_drebin', 'ccs_drebin_apigraph', \
             'apigraph', 'reduced_apigraph', 'reduced_apigraph_keeptwo'], help='choose the type of features to train on.', required=True)
     parser.add_argument('--model_path', type=str, help='model path. e.g., models/20210625/20210625_exp1_drebin_train2012_monthlytest.pkl', required=True)
@@ -24,10 +27,13 @@ def main(args):
     elif args.feature_type == 'drebin_asn':
         data_path = '/space1/android'
         ListFileFunc = CM.ListASNDataFiles
-    elif args.feature_type == 'reduced_drebin':
+    elif args.feature_type == 'mldroid_drebin':
         data_path = '/space1/mldroid_drebin'
         ListFileFunc = CM.ListDataFiles
-    elif args.feature_type == 'reduced_drebin_asn':
+    elif args.feature_type == 'mldroid_drebin_reduced':
+        data_path = '/space1/mldroid_drebin_reduced'
+        ListFileFunc = CM.ListDataFiles
+    elif args.feature_type == 'mldroid_drebin_asn':
         data_path = '/space1/mldroid_drebin'
         ListFileFunc = CM.ListASNDataFiles
     elif args.feature_type == 'apigraph':
@@ -48,24 +54,43 @@ def main(args):
     else:
         exit()
 
-    MalPath = os.path.join(data_path, 'malware/2012')
-    GoodPath = os.path.join(data_path, 'benign/2012')
+    #MalPath = os.path.join(data_path, 'malware/2015/01')
+    #GoodPath = os.path.join(data_path, 'benign/2015/01')
+ 
+    MalPath = os.path.join(data_path, 'malware/%d' % args.start_year)
+    GoodPath = os.path.join(data_path, 'benign/%d' % args.start_year)
     
     TrainMalSamples = []
     TrainGoodSamples = []
-    for curdir in os.listdir(MalPath):
-        #for curdir in ['01']:
+    #TrainMalSamples.extend(ListFileFunc(MalPath))
+    #TrainGoodSamples.extend(ListFileFunc(GoodPath))
+    #"""
+
+    if args.train_one_month:
+        train_dir_list = ['01']
+    else:
+        # one year
+        train_dir_list = os.listdir(MalPath)
+
+    for curdir in train_dir_list:
         TrainMalDir = os.path.join(MalPath, curdir)
         TrainMalSamples.extend(ListFileFunc(TrainMalDir))
-    for curdir in os.listdir(GoodPath):
-        #for curdir in ['01']:
+    
+    for curdir in train_dir_list:
         TrainGoodDir = os.path.join(GoodPath, curdir)
         TrainGoodSamples.extend(ListFileFunc(TrainGoodDir))
+    #"""
     FileListClassification(SaveModelName, TrainMalSamples, TrainGoodSamples, TrainMalSamples, TrainGoodSamples, FeatureOption, None, 30)
 
-    for year in range(2013, 2015):
+    if args.train_one_month:
+        start = args.start_year
+    else:
+        start = args.start_year + 1
+    for year in range(start, 2019):
         month_list = list(range(1, 13))
         for midx, m in enumerate(month_list):
+            if year == args.start_year and midx == 0:
+                continue
             if midx < 9:
                 month = '0%s' % m
             else:
