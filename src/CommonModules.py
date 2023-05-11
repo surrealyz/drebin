@@ -12,8 +12,8 @@ import shutil
 import numpy as np
 import scipy.sparse
 import scipy.io
-import networkx as nx
-from networkx.readwrite import json_graph
+# import networkx as nx
+# from networkx.readwrite import json_graph
 
 import logging
 logging.basicConfig(level=logging.INFO,filename="LogFile.log",filemode="a",
@@ -471,64 +471,64 @@ def ImportFromPkl(AbsolutePath):
         return Content
 
 
-def ExportToJsonNodeLinkData(AbsolutePath,GraphContent):
-    '''
-    Export graph node link date to json file. 
+# def ExportToJsonNodeLinkData(AbsolutePath,GraphContent):
+#     '''
+#     Export graph node link date to json file. 
 
-    :param String AbsolutePath: absolute path to store the json file
-    :param nxGraph GraphContent: some graph you want to export
-    '''    
-    try:
-        f=open(AbsolutePath,"wb")
-        Content=json_graph.node_link_data(GraphContent)
-        json.dump(Content,f,indent=4)
-    except Exception as e:
-        print e
-        logger.error("JsonNodeLinkData writing Failed.")
-        if "f" in dir():
-            f.close()
-        #sys.exit("JsonNodeLinkData writing Failed.")
-    else:
-        logger.info("JsonNodeLinkData of "+AbsolutePath+" written successfully.")
-        f.close()
+#     :param String AbsolutePath: absolute path to store the json file
+#     :param nxGraph GraphContent: some graph you want to export
+#     '''    
+#     try:
+#         f=open(AbsolutePath,"wb")
+#         Content=json_graph.node_link_data(GraphContent)
+#         json.dump(Content,f,indent=4)
+#     except Exception as e:
+#         print e
+#         logger.error("JsonNodeLinkData writing Failed.")
+#         if "f" in dir():
+#             f.close()
+#         #sys.exit("JsonNodeLinkData writing Failed.")
+#     else:
+#         logger.info("JsonNodeLinkData of "+AbsolutePath+" written successfully.")
+#         f.close()
 
-def ExportToGML(AbsolutePath, GraphContent):
-    '''
-    Export graph node link date to json file. 
+# def ExportToGML(AbsolutePath, GraphContent):
+#     '''
+#     Export graph node link date to json file. 
 
-    :param String AbsolutePath: absolute path to store the json file
-    :param nxGraph GraphContent: some graph you want to export
-    '''    
-    try:
-        nx.write_gml(GraphContent, AbsolutePath)
-    except:
-        logger.error("JsonNodeLinkData writing Failed.")
-        #sys.exit("JsonNodeLinkData writing Failed.")
-    else:
-        logger.info("JsonNodeLinkData of "+AbsolutePath+" written successfully.")
+#     :param String AbsolutePath: absolute path to store the json file
+#     :param nxGraph GraphContent: some graph you want to export
+#     '''    
+#     try:
+#         nx.write_gml(GraphContent, AbsolutePath)
+#     except:
+#         logger.error("JsonNodeLinkData writing Failed.")
+#         #sys.exit("JsonNodeLinkData writing Failed.")
+#     else:
+#         logger.info("JsonNodeLinkData of "+AbsolutePath+" written successfully.")
 
 
-def ImportFromJsonNodeLinkData(AbsolutePath):
-    '''
-Import graph node link date from json file.
+# def ImportFromJsonNodeLinkData(AbsolutePath):
+#     '''
+# Import graph node link date from json file.
 
-:param String AbsolutePath: absolute path of the json file
-:return GraphContent: Graph content in the json file
-:rtype nxGraph
-    '''    
-    try:
-        f=open(AbsolutePath,"rb")
-        Content=json.load(f)
-        GraphContent=json_graph.node_link_graph(Content)
-    except:
-        logger.error("JsonNodeLinkData writing Failed.")
-        if "f" in dir():
-            f.close()
-        #sys.exit("JsonNodeLinkData writing Failed.")
-    else:
-        logger.info("JsonNodeLinkData of "+AbsolutePath+" loaded successfully.")
-        f.close()
-        return GraphContent
+# :param String AbsolutePath: absolute path of the json file
+# :return GraphContent: Graph content in the json file
+# :rtype nxGraph
+#     '''    
+#     try:
+#         f=open(AbsolutePath,"rb")
+#         Content=json.load(f)
+#         GraphContent=json_graph.node_link_graph(Content)
+#     except:
+#         logger.error("JsonNodeLinkData writing Failed.")
+#         if "f" in dir():
+#             f.close()
+#         #sys.exit("JsonNodeLinkData writing Failed.")
+#     else:
+#         logger.info("JsonNodeLinkData of "+AbsolutePath+" loaded successfully.")
+#         f.close()
+#         return GraphContent
 
 def ImportFromJson(AbsolutePath):
     '''
